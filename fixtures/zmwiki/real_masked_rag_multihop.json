@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "source": "zmwiki",
+  "source_run_id": "phase09_smoke",
+  "source_sha256": null,
+  "importer_version": "0.1.0",
+  "subject": {
+    "name": "ZMWiki",
+    "git_sha": null,
+    "model_id": "deepseek-chat",
+    "config_sha256": null
+  },
+  "dataset": {
+    "name": "zmwiki-multihop-smoke",
+    "snapshot_sha256": null
+  },
+  "run_status": "SUCCEEDED",
+  "cases": [
+    {
+      "case_id": "mh01_manager_title",
+      "kind": "rag_agent",
+      "input": {
+        "question": "What is the job title of the person Alice Smith reports to?"
+      },
+      "expected": {
+        "answerable": true,
+        "required_evidence_ids": ["alice", "bob"],
+        "scoring_rule": "keyword_group_match"
+      },
+      "tags": ["fixture-source:real-masked", "hop:2"],
+      "attempts": [
+        {
+          "attempt_index": 0,
+          "subject_outcome": "COMPLETED",
+          "trace_complete": true,
+          "measurement_status": "unavailable",
+          "latency_ms": null,
+          "input_tokens": null,
+          "output_tokens": null,
+          "error_type": null,
+          "events": [
+            {"sequence": 1, "event_type": "search", "status": "ok", "payload": {"candidates": 5, "new": 5}},
+            {"sequence": 2, "event_type": "read_page", "status": "ok", "payload": {"page_id": "alice"}},
+            {"sequence": 3, "event_type": "read_page", "status": "ok", "payload": {"page_id": "bob"}},
+            {"sequence": 4, "event_type": "answer", "status": "ok", "payload": {"retrieved_evidence_ids": ["alice", "bob"], "source_count": 2}}
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "mh03_orion_lead_chain",
+      "kind": "rag_agent",
+      "input": {
+        "question": "Who leads the Orion project, and who does that person report to?"
+      },
+      "expected": {
+        "answerable": true,
+        "required_evidence_ids": ["project_orion", "carol", "david"],
+        "scoring_rule": "keyword_group_match"
+      },
+      "tags": ["fixture-source:real-masked", "hop:3", "recall:partial"],
+      "attempts": [
+        {
+          "attempt_index": 0,
+          "subject_outcome": "COMPLETED",
+          "trace_complete": true,
+          "measurement_status": "unavailable",
+          "latency_ms": null,
+          "input_tokens": null,
+          "output_tokens": null,
+          "error_type": null,
+          "events": [
+            {"sequence": 1, "event_type": "search", "status": "ok", "payload": {"candidates": 5, "new": 5}},
+            {"sequence": 2, "event_type": "read_page", "status": "ok", "payload": {"page_id": "project_orion"}},
+            {"sequence": 3, "event_type": "read_page", "status": "ok", "payload": {"page_id": "carol"}},
+            {"sequence": 4, "event_type": "answer", "status": "ok", "payload": {"retrieved_evidence_ids": ["project_orion", "carol"], "source_count": 2}}
+          ]
+        }
+      ]
+    }
+  ]
+}

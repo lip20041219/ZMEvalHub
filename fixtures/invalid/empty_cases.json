@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "source": "zmai",
+  "source_run_id": "A1_echo_on_20261011_114528",
+  "source_sha256": null,
+  "importer_version": "0.1.0",
+  "subject": {
+    "name": "ZMAI",
+    "git_sha": null,
+    "model_id": "deepseek-chat",
+    "config_sha256": null
+  },
+  "dataset": {
+    "name": "zmai-order-kata-pytest",
+    "snapshot_sha256": null
+  },
+  "run_status": "SUCCEEDED",
+  "cases": []
+}

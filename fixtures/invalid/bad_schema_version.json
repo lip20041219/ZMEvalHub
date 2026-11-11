@@ -1,0 +1,135 @@
+{
+  "schema_version": 2,
+  "source": "zmai",
+  "source_run_id": "A1_echo_on_20261011_114528",
+  "source_sha256": null,
+  "importer_version": "0.1.0",
+  "subject": {
+    "name": "ZMAI",
+    "git_sha": null,
+    "model_id": "deepseek-chat",
+    "config_sha256": null
+  },
+  "dataset": {
+    "name": "zmai-order-kata-pytest",
+    "snapshot_sha256": null
+  },
+  "run_status": "SUCCEEDED",
+  "cases": [
+    {
+      "case_id": "order-kata-make-pytest-pass",
+      "kind": "coding_agent",
+      "input": {
+        "task": "运行 pytest，检查失败原因，读取相关源码，做出最小修改，再运行测试验证，使全部测试通过。"
+      },
+      "expected": {
+        "requires_post_edit_test": true,
+        "expected_all_tests_pass": true
+      },
+      "tags": [
+        "fixture-source:real-masked",
+        "repo:order-kata"
+      ],
+      "attempts": [
+        {
+          "attempt_index": 0,
+          "subject_outcome": "COMPLETED",
+          "trace_complete": true,
+          "measurement_status": "unavailable",
+          "latency_ms": 58000,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cost_amount": null,
+          "cost_currency": null,
+          "error_type": null,
+          "events": [
+            {
+              "sequence": 1,
+              "event_type": "agent_initialize",
+              "status": "ok",
+              "payload": {
+                "phase": "init"
+              }
+            },
+            {
+              "sequence": 2,
+              "event_type": "read_file",
+              "status": "ok",
+              "payload": {
+                "target": "src/discounts.py"
+              }
+            },
+            {
+              "sequence": 3,
+              "event_type": "read_file",
+              "status": "ok",
+              "payload": {
+                "target": "tests/test_discounts.py"
+              }
+            },
+            {
+              "sequence": 4,
+              "event_type": "read_file",
+              "status": "ok",
+              "payload": {
+                "target": "tests/test_net_value.py"
+              }
+            },
+            {
+              "sequence": 5,
+              "event_type": "read_file",
+              "status": "ok",
+              "payload": {
+                "target": "src/inventory.py"
+              }
+            },
+            {
+              "sequence": 6,
+              "event_type": "file_edit",
+              "status": "ok",
+              "payload": {
+                "target": "src/discounts.py",
+                "range": "37-37"
+              }
+            },
+            {
+              "sequence": 7,
+              "event_type": "file_edit",
+              "status": "ok",
+              "payload": {
+                "target": "src/discounts.py",
+                "range": "35-37"
+              }
+            },
+            {
+              "sequence": 8,
+              "event_type": "file_edit",
+              "status": "ok",
+              "payload": {
+                "target": "src/reports.py",
+                "range": "51-64"
+              }
+            },
+            {
+              "sequence": 9,
+              "event_type": "test_run",
+              "status": "ok",
+              "exit_code": 0,
+              "payload": {
+                "summary": "69 passed, 0 failed, 0 errors"
+              }
+            },
+            {
+              "sequence": 10,
+              "event_type": "agent_finish",
+              "status": "ok",
+              "payload": {
+                "action": "tests_passed"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

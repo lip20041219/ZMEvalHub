@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "source": "synthetic-zmai",
+  "source_run_id": "synthetic-truncated-log-001",
+  "source_sha256": null,
+  "importer_version": "0.1.0",
+  "subject": {
+    "name": "ZMAI",
+    "git_sha": null,
+    "model_id": "synthetic",
+    "config_sha256": null
+  },
+  "dataset": {
+    "name": "synthetic-reliability-cases",
+    "snapshot_sha256": null
+  },
+  "run_status": "SUCCEEDED",
+  "cases": [
+    {
+      "case_id": "synthetic-truncated-evidence",
+      "kind": "coding_agent",
+      "input": {
+        "task": "修复一个失败的单元测试"
+      },
+      "expected": {
+        "requires_post_edit_test": true,
+        "_provenance_note": "SYNTHETIC FIXTURE. Demonstrates the UNKNOWN case: the log is TRUNCATED (trace_complete=false), so a rule that needs the full event window must return UNKNOWN, not FAIL. This is the single most important semantic in the project."
+      },
+      "tags": [
+        "fixture-source:synthetic",
+        "purpose:UNKNOWN-evidence",
+        "provenance:synthetic",
+        "do-not-cite-as-real"
+      ],
+      "attempts": [
+        {
+          "attempt_index": 0,
+          "subject_outcome": "COMPLETED",
+          "trace_complete": false,
+          "measurement_status": "unavailable",
+          "latency_ms": null,
+          "input_tokens": null,
+          "output_tokens": null,
+          "error_type": null,
+          "events": [
+            {
+              "sequence": 1,
+              "event_type": "file_edit",
+              "status": "ok",
+              "payload": {
+                "target": "src/pricing.py"
+              }
+            },
+            {
+              "sequence": 2,
+              "event_type": "test_run",
+              "status": "unknown",
+              "exit_code": null,
+              "payload": {
+                "summary": "log truncated, exit code missing"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

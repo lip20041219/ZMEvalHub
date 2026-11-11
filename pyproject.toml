@@ -1,0 +1,49 @@
+[project]
+name = "zmevalhub"
+version = "0.1.0.dev0"
+description = "ZMEvalHub — AI Agent reliability evaluation hub (P0.0: data contract only)"
+readme = "README.md"
+requires-python = ">=3.11,<3.16"
+license = { text = "MIT" }
+dependencies = [
+    "pydantic>=2.9,<3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8,<9",
+    "ruff>=0.6",
+    "mypy>=1.11",
+]
+# Phoenix integration is optional: P0.0 core (contract + CLI) must work with
+# zero extra deps. Enable with: uv sync --extra phoenix
+phoenix = [
+    "arize-phoenix>=21,<22",
+    "arize-phoenix-otel>=0.17,<0.18",
+]
+
+[project.scripts]
+zmeval = "zmevalhub.cli.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/zmevalhub"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+warn_unused_ignores = true

@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "source": "synthetic-zmai",
+  "source_run_id": "synthetic-false-completion-001",
+  "source_sha256": null,
+  "importer_version": "0.1.0",
+  "subject": {
+    "name": "ZMAI",
+    "git_sha": null,
+    "model_id": "synthetic",
+    "config_sha256": null
+  },
+  "dataset": {
+    "name": "synthetic-reliability-cases",
+    "snapshot_sha256": null
+  },
+  "run_status": "SUCCEEDED",
+  "cases": [
+    {
+      "case_id": "synthetic-no-verification",
+      "kind": "coding_agent",
+      "input": {
+        "task": "修复一个失败的单元测试"
+      },
+      "expected": {
+        "requires_post_edit_test": true,
+        "_provenance_note": "SYNTHETIC FIXTURE. Not a real ZMAI run result. Constructed to exercise the ZM-R001 'completion_without_verification' shape. Do not cite as measured evidence."
+      },
+      "tags": [
+        "fixture-source:synthetic",
+        "purpose:ZM-R001-shape",
+        "provenance:synthetic",
+        "do-not-cite-as-real"
+      ],
+      "attempts": [
+        {
+          "attempt_index": 0,
+          "subject_outcome": "COMPLETED",
+          "trace_complete": true,
+          "measurement_status": "unavailable",
+          "latency_ms": null,
+          "input_tokens": null,
+          "output_tokens": null,
+          "error_type": null,
+          "events": [
+            {
+              "sequence": 1,
+              "event_type": "file_edit",
+              "status": "ok",
+              "payload": {
+                "target": "src/pricing.py"
+              }
+            },
+            {
+              "sequence": 2,
+              "event_type": "agent_finish",
+              "status": "ok",
+              "payload": {
+                "claimed": "COMPLETED"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

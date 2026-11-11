@@ -1,0 +1,441 @@
+{
+  "$defs": {
+    "AttemptV1": {
+      "additionalProperties": false,
+      "description": "One execution attempt for a single case.\n\nA case may be attempted several times; ``attempt_index`` keeps them apart\ninstead of overwriting earlier results (§6.2).",
+      "properties": {
+        "attempt_index": {
+          "description": "0-based attempt ordinal within the case.",
+          "minimum": 0,
+          "title": "Attempt Index",
+          "type": "integer"
+        },
+        "subject_outcome": {
+          "$ref": "#/$defs/SubjectOutcome",
+          "description": "What the subject CLAIMED. Never a verdict."
+        },
+        "events": {
+          "items": {
+            "$ref": "#/$defs/EventV1"
+          },
+          "title": "Events",
+          "type": "array"
+        },
+        "latency_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Latency Ms"
+        },
+        "input_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Tokens"
+        },
+        "output_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Tokens"
+        },
+        "cost_amount": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cost Amount"
+        },
+        "cost_currency": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cost Currency"
+        },
+        "measurement_status": {
+          "$ref": "#/$defs/MeasurementStatus",
+          "default": "unavailable",
+          "description": "'unavailable' forbids presenting missing numbers as real measurements."
+        },
+        "error_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Set when the SUBJECT errored (e.g. 'model_error').",
+          "title": "Error Type"
+        },
+        "trace_complete": {
+          "default": false,
+          "description": "True only when the source log is known to be complete. Rules that need a full event window must return UNKNOWN when this is False (§7.2 ZM-R001).",
+          "title": "Trace Complete",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "attempt_index",
+        "subject_outcome"
+      ],
+      "title": "AttemptV1",
+      "type": "object"
+    },
+    "CaseKind": {
+      "description": "Which family of reliability rules applies to a case.",
+      "enum": [
+        "coding_agent",
+        "rag_agent"
+      ],
+      "title": "CaseKind",
+      "type": "string"
+    },
+    "CaseV1": {
+      "additionalProperties": false,
+      "description": "One evaluation case: an input, its expectation, and the attempts made.",
+      "properties": {
+        "case_id": {
+          "description": "Stable id, mapped from the source run.",
+          "minLength": 1,
+          "title": "Case Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/CaseKind"
+        },
+        "input": {
+          "additionalProperties": true,
+          "title": "Input",
+          "type": "object"
+        },
+        "expected": {
+          "additionalProperties": true,
+          "description": "What the case requires, e.g. {'requires_post_edit_test': true}.",
+          "title": "Expected",
+          "type": "object"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        },
+        "attempts": {
+          "items": {
+            "$ref": "#/$defs/AttemptV1"
+          },
+          "title": "Attempts",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id",
+        "kind"
+      ],
+      "title": "CaseV1",
+      "type": "object"
+    },
+    "DatasetRef": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "snapshot_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-fA-F]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Content hash of the evaluated dataset. Required before A/B comparison.",
+          "title": "Snapshot Sha256"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "DatasetRef",
+      "type": "object"
+    },
+    "EventV1": {
+      "additionalProperties": false,
+      "description": "One observable event in a subject's execution trace.\n\n``sequence`` is the monotonic ordering key. It is authoritative: ordering\nmust survive logs that lack reliable wall-clock timestamps (§6.4).",
+      "properties": {
+        "sequence": {
+          "description": "Monotonic 1-based ordering key.",
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "event_type": {
+          "description": "Normalized event type, e.g. 'file_edit'.",
+          "minLength": 1,
+          "title": "Event Type",
+          "type": "string"
+        },
+        "status": {
+          "default": "unknown",
+          "description": "Outcome of the event itself. 'unknown' when the source log cannot tell.",
+          "enum": [
+            "ok",
+            "failed",
+            "unknown"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "time_start": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Time Start"
+        },
+        "time_end": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Time End"
+        },
+        "exit_code": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Process exit code for shell/verification events.",
+          "title": "Exit Code"
+        },
+        "payload": {
+          "additionalProperties": true,
+          "description": "Free-form event detail; treated as untrusted data.",
+          "title": "Payload",
+          "type": "object"
+        }
+      },
+      "required": [
+        "sequence",
+        "event_type"
+      ],
+      "title": "EventV1",
+      "type": "object"
+    },
+    "MeasurementStatus": {
+      "description": "Whether a numeric measurement is actually available (§6.4).\n\nA missing token count must be ``null`` + ``UNAVAILABLE``, never ``0``.",
+      "enum": [
+        "measured",
+        "unavailable"
+      ],
+      "title": "MeasurementStatus",
+      "type": "string"
+    },
+    "RunStatus": {
+      "description": "Platform-side execution state of an evaluation run.\n\n``SUCCEEDED`` means the evaluation work completed. It does NOT mean the\nsubject under test passed.",
+      "enum": [
+        "CREATED",
+        "QUEUED",
+        "RUNNING",
+        "SUCCEEDED",
+        "PARTIAL",
+        "FAILED",
+        "TIMED_OUT",
+        "CANCELED"
+      ],
+      "title": "RunStatus",
+      "type": "string"
+    },
+    "SubjectOutcome": {
+      "description": "What the subject under test reported about itself (§6.1).\n\nThis is a *claim*, not a result. A subject may report ``COMPLETED`` while\nnever having verified anything.",
+      "enum": [
+        "COMPLETED",
+        "FAILED",
+        "UNKNOWN"
+      ],
+      "title": "SubjectOutcome",
+      "type": "string"
+    },
+    "SubjectRef": {
+      "additionalProperties": false,
+      "description": "Identity of the thing under test (§6.4).",
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "git_sha": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Commit under test. Optional: import-only subjects may have no git history.",
+          "title": "Git Sha"
+        },
+        "model_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Id"
+        },
+        "config_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-fA-F]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Config Sha256"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "SubjectRef",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A normalized external evaluation result (``schema_version = 1``).\n\nThis is the boundary object produced by importers. Upstream projects are\nnever modified; adapters only *convert* into this shape.",
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "source": {
+      "description": "Adapter name, e.g. 'zmai' / 'zmwiki'.",
+      "minLength": 1,
+      "title": "Source",
+      "type": "string"
+    },
+    "source_run_id": {
+      "minLength": 1,
+      "title": "Source Run Id",
+      "type": "string"
+    },
+    "source_sha256": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-fA-F]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Hash of the original import bytes, for idempotency.",
+      "title": "Source Sha256"
+    },
+    "importer_version": {
+      "default": "0.1.0",
+      "title": "Importer Version",
+      "type": "string"
+    },
+    "subject": {
+      "$ref": "#/$defs/SubjectRef"
+    },
+    "dataset": {
+      "$ref": "#/$defs/DatasetRef"
+    },
+    "cases": {
+      "items": {
+        "$ref": "#/$defs/CaseV1"
+      },
+      "minItems": 1,
+      "title": "Cases",
+      "type": "array"
+    },
+    "run_status": {
+      "$ref": "#/$defs/RunStatus",
+      "default": "SUCCEEDED",
+      "description": "Platform execution state only. Does not imply subject success."
+    }
+  },
+  "required": [
+    "schema_version",
+    "source",
+    "source_run_id",
+    "subject",
+    "dataset",
+    "cases"
+  ],
+  "title": "SourceRunV1",
+  "type": "object"
+}

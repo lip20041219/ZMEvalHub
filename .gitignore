@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Environment — never commit real credentials
+.env
+.env.local
+
+# Test / tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Build artifacts
+dist/
+build/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Raw evaluation inputs must never be committed unmasked.
+# Only de-identified fixtures under fixtures/ are allowed in git.
+raw/
+*.raw.jsonl
