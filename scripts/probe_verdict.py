@@ -7,6 +7,8 @@ from datetime import UTC, datetime, timedelta
 
 from phoenix.client import Client
 
+from zmevalhub.importers.phoenix_import import log_metric_version, read_metric_versions
+
 c = Client(base_url=os.environ.get("PHOENIX_COLLECTOR_ENDPOINT", "http://127.0.0.1:6006"))
 
 
@@ -72,3 +74,9 @@ c.experiments.log_evaluation(
     experiment_run_id=rid, name="ZM-R001", label="PASS", annotator_kind="CODE"
 )
 show("re-log ZM-R001")
+
+log_metric_version(c, rid, "ZM-R001", "1", "FAIL")
+log_metric_version(c, rid, "ZM-R001", "2", "PASS")
+versions = read_metric_versions(c, eid, rid, "ZM-R001")
+assert versions == {"1": "FAIL", "2": "PASS"}, versions
+print("versioned metric names retained independently:", versions)

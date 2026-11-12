@@ -1,5 +1,12 @@
 # 开源组件复用决策（P0.1a）
 
+> P0.1b 修正（2026-11-11）：Phoenix 21.0.0 SDK 明确按
+> `(experiment_run_id, name)` upsert。P0.1a 观察到的覆盖只发生在**相同名称**；
+> 不同名称已实测并存。因此使用 `metric_id@metric_version` 存版本，不建
+> `zm_metric_versions` 表。版本名在真实服务上的往返断言已补入
+> `scripts/probe_verdict.py`，尚待手动执行。下文“必须自研指标版本表”属于
+> P0.1a 当时的判断，以此修正为准。
+
 > 验证日期：2026-11-11 · Phoenix `21.0.0` · `arize-phoenix-otel` `0.17.3`
 > 结论基于**实际代码执行**，不是文档阅读。每条 PASS/FAIL 都对应 `scripts/` 下可重跑的脚本。
 
@@ -15,10 +22,10 @@
 | 读取 / 查询 / 关联原始记录 | ✅ 通过 `phoenix.client.Client` 可查 |
 | 稳定标识 | ⚠️ 部分：Phoenix 用 GlobalID，**不是内容哈希** |
 | 幂等导入 | ❌ **无原生支持**，需自研 |
-| 版本比较 | ⚠️ 有 `dataset_version_id`，但**同一指标重评测会覆盖** |
+| 版本比较 | ✅ 有 `dataset_version_id`；不同 `metric_id@metric_version` 名称可并存，同名重评测 upsert |
 | 可靠性规则（ZM-R001~） | ❌ **完全没有**，必须自研 |
 
-**一句话**：Phoenix 负责"存 + 看 + 追踪"，ZMEvalHub 负责"判定 + 幂等 + 版本化指标"。
+**一句话**：Phoenix 负责"存 + 看 + 追踪"及不同名称的版本化 Evaluation，ZMEvalHub 负责"判定 + 幂等协调 + 版本命名 + 对比/Gate"。
 
 ---
 
@@ -29,11 +36,12 @@
 | 组件 | 许可证 | 影响 |
 |---|---|---|
 | `arize-phoenix`（服务器本体） | **Elastic License 2.0 (ELv2)** | 可自用/修改/分发，但**禁止作为托管服务转售**，禁止移除 license key 功能 |
-| `arize-phoenix-otel`（客户端 SDK） | **Apache-2.0** | 无限制 |
-| `openinference-semantic-conventions` | Apache-2.0 | 无限制 |
+| `arize-phoenix-client`（间接依赖，当前 3.7.0） | **Apache-2.0** | 按该包自身许可与通知要求使用 |
+| `arize-phoenix-otel`（客户端 SDK） | **Apache-2.0** | 按该包自身许可与通知要求使用 |
+| `openinference-semantic-conventions` | Apache-2.0 | 按该包自身许可与通知要求使用 |
 | Opik（对照） | **Apache-2.0（含后端）** | 无限制 |
 
-> ELv2 不是 OSI 认证的开源协议。若 ZMEvalHub 未来要提供公开托管演示，或宣称"完全开源栈"，需要重新评估。**仅本地/自托管使用则无影响。**
+> ELv2 不是 OSI 认证的开源协议。若 ZMEvalHub 未来提供托管服务或重新分发含 Phoenix 的产物，需要按具体用途复核 ELv2 条款。本仓库 MIT 许可不覆盖 Phoenix。最新核对与来源见 [`THIRD_PARTY.md`](THIRD_PARTY.md)。
 
 ---
 
@@ -91,9 +99,9 @@ ZMAI 的 `file_edit → test_run → agent_finish` 可以 1:1 映射为 span 树
 | `log_evaluation` 写 PASS/FAIL/UNKNOWN/ERROR | **PASS** | 四种 label 全部接受 |
 | label 存放位置 | `result.label` | **不是**顶层 `label` 键 |
 | 不同指标名累积 | PASS | `ZM-R001` + `ZM-R002` → 2 条 |
-| **同一指标重复评测** | **覆盖，不累积** | 4 次写 `ZM-R001` 只剩 1 条 |
+| **同一指标名重复评测** | **覆盖，不累积** | 4 次写 `ZM-R001` 只剩 1 条 |
 
-最后一条是**架构级限制**：总纲 §6.3 要求 `(attempt_id, metric_id, metric_version)` 唯一、且"规则升级后建立新 Run / evaluation revision"。Phoenix 无法保存同一指标的多版本历史，**这部分必须自研**。
+P0.1b 后续验证确认：Phoenix 按 `(experiment_run_id, name)` upsert；使用 `metric_id@metric_version` 作为不同 Evaluation 名称即可并存版本。历史记录是否保留仍以具体运行和名称为准；无需自行建设指标版本表。
 
 ---
 

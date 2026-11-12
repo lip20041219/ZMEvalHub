@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "name": "agent-regression",
+  "version": "1",
+  "mode": "paired",
+  "on_incomparable": "BLOCKED",
+  "on_indeterminate": "BLOCKED"
+}

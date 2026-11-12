@@ -8,6 +8,10 @@ venv/
 # Environment — never commit real credentials
 .env
 .env.local
+.env.*
+!.env.example
+*.pem
+*.key
 
 # Test / tooling caches
 .pytest_cache/
@@ -30,3 +34,13 @@ Thumbs.db
 # Only de-identified fixtures under fixtures/ are allowed in git.
 raw/
 *.raw.jsonl
+*.raw.json
+*.checkpoint.jsonl
+!fixtures/zmwiki/real_masked_phase09_checkpoint.jsonl
+*.sqlite
+*.sqlite3
+*.db
+*.db-*
+*.log
+.state/
+.zmevalhub/

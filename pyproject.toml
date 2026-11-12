@@ -7,6 +7,7 @@ requires-python = ">=3.11,<3.16"
 license = { text = "MIT" }
 dependencies = [
     "pydantic>=2.9,<3",
+    "sqlalchemy>=2.0,<3",
 ]
 
 [project.optional-dependencies]
@@ -14,12 +15,17 @@ dev = [
     "pytest>=8,<9",
     "ruff>=0.6",
     "mypy>=1.11",
+    "httpx>=0.27,<1",
 ]
 # Phoenix integration is optional: P0.0 core (contract + CLI) must work with
 # zero extra deps. Enable with: uv sync --extra phoenix
 phoenix = [
     "arize-phoenix>=21,<22",
     "arize-phoenix-otel>=0.17,<0.18",
+]
+web = [
+    "fastapi>=0.115,<1",
+    "uvicorn>=0.30,<1",
 ]
 
 [project.scripts]

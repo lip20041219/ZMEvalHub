@@ -1,231 +1,54 @@
 # ZMEvalHub
 
-**AI Agent 可靠性评测中台** — 把"任务成功"和"Agent 自称成功"分开。
+ZMEvalHub 是面向 Coding Agent 和 RAG 运行记录的**本地评测工具**。它读取已有结果，按可追溯证据执行确定性规则，并对满足可比条件的两次运行做成对比较和质量 Gate。项目当前完成至 **P0.4a**；[开发状态](docs/DEVELOPMENT_STATUS.md)记录了各阶段的验证边界。
 
-> 当前状态：**P0.0 + P0.1a（数据契约 + 开源组件复用验证）**。这是一个可运行、可测试的起点，**不是**可用的评测平台。
-> 完整的规划与验收标准见 [`docs/00_ENGINEERING_BLUEPRINT.md`](docs/00_ENGINEERING_BLUEPRINT.md)。
+## 已实现
 
----
+- Pydantic `SourceRunV1` 数据契约与校验 CLI。
+- ZMAI `execution_log.json`、ZMWiki Benchmark JSONL 的只读适配；Coding Agent 的 ZM-R001～R006 和无需模型调用的 RAG 指标。
+- 新运行的 Trace 采集与验证接口、版本化 Phoenix Evaluation 发布接口，以及本地 SQLite 导入账本。Phoenix 是可选的独立服务，不包含在本仓库。
+- 离线 `EvalBundle` 成对比较与版本化 Gate；Gate 退出码为 `0=PASS`、`1=FAIL`、`2=BLOCKED`。
+- FastAPI 本地产物只读查询：运行列表、详情、规则结果、证据引用、比较与 Gate。它不提供写入或 Phoenix 在线查询。
 
-## 项目要解决什么
+历史 ZMAI 日志缺独立 Trace 完整性证明，相关规则可能返回 `UNKNOWN`。只有在运行开始时采集了快照、执行条件和来源证明，且通过现有守卫，两次运行才可能形成可信比较。**真实 ZMAI 成对运行及 Gate 验收尚未执行**；仓库中的 synthetic 样本和测试结果不能当作真实 A/B 性能提升。脱敏真实来源 fixture 仅用于适配与回归检查，其来源说明见[开发状态](docs/DEVELOPMENT_STATUS.md)。
 
-Agent 开发者经常只能拿到一个"任务成功/失败"的结果，却回答不了：
+## 安装与离线用法
 
-1. Agent 说它完成了，**凭什么**？有没有外部测试或工具结果支撑？
-2. 执行过程中是否出现未验证修改、重复读取、无效重试、超预算？
-3. 改了一处代码或 Prompt 后，**哪些用例改善、哪些退化**？
-
-ZMEvalHub 不重跑被测 Agent，也不自研评测算法。它**消费**已有执行结果（ZMAI / ZMWiki / Promptfoo / OTel），
-用确定性规则产出可追溯的证据、成对版本差异和 CI 质量闸门。
-
-### 三种"成功"必须分开
-
-这是整个项目的立身之本，也是代码里被强制约束的部分：
-
-| 概念 | 回答的问题 | 陷阱 |
-|---|---|---|
-| `run_status` | 平台评测流程跑完了吗？ | `SUCCEEDED` **不等于** Agent 成功 |
-| `subject_outcome` | 被测系统**自己声称**了什么？ | `COMPLETED` 可能从未验证过任何东西 |
-| `verdict` | 规则根据证据判了什么？ | 这才是真值 |
-
-两个不能被混淆的判定：
-
-- **`UNKNOWN` ≠ `FAIL`** — 证据不足，不是失败。
-- **`ERROR` ≠ `FAIL`** — 评测器自己崩了，不是被测系统失败。
-
----
-
-## 技术架构
-
-P0 是 **Python 模块化单体 + 独立异步 Worker**（本轮只实现数据契约层）：
-
-```text
-Vue3 Console │ zmeval CLI │ REST / OpenAPI
-                     ↓
-        FastAPI (zmevalhub)         ← P0.1+
-   Project/Dataset/Snapshot/Run
-   Import Adapters/Rules/Gate
-              ↓            ↓
-        PostgreSQL    Redis + RQ      ← P0.1 / P0.2
-              ↓
-        RQ Worker (rules)           ← P0.2
-```
-
-| 层 | 选型 | 本轮状态 |
-|---|---|---|
-| 数据契约 | **Pydantic v2** | ✅ 已实现 |
-| CLI | argparse | ✅ `zmeval validate` / `zmeval schema` |
-| 测试 | pytest | ✅ 已实现 |
-| **存储 / Trace** | **Phoenix 21 + OpenInference** | ✅ 已验证（P0.1a） |
-| API | FastAPI | ⬜ P0.1b |
-| 存储 | PostgreSQL + SQLAlchemy 2 + Alembic | ⬜ P0.1 |
-| 队列 | Redis + RQ | ⬜ P0.2 |
-| 前端 | Vue 3 + TS + Vite + Element Plus | ⬜ P0.3 |
-| 指标 | Ragas（optional extra） | ⬜ P1 |
-
----
-
-## 安装
-
-需要 Python 3.11+ 和 [uv](https://docs.astral.sh/uv/)。
+需要 Python 3.11+ 和 [uv](https://docs.astral.sh/uv/)：
 
 ```bash
-git clone <repo-url> ZMEvalHub
-cd ZMEvalHub
-
-uv sync --extra dev              # 核心：契约 + CLI + 测试
-uv sync --extra dev --extra phoenix   # 加上 Phoenix 集成
+uv sync --extra dev
+uv run zmeval validate fixtures/zmai/real_masked_coding_agent_pass.json
+uv run zmeval evaluate-zmai <execution_log.json>
+uv run zmeval evaluate-zmwiki <checkpoint.jsonl>
+uv run zmeval compare <baseline.json> <candidate.json>
+uv run zmeval gate <baseline.json> <candidate.json> --policy config/gates/agent_regression_v1.json
 ```
 
----
+尖括号是占位说明，请替换为实际路径；在 PowerShell 中不要直接输入尖括号。`compare` 与 `gate` 的 JSON 输入必须是包含运行条件与版本化评测结果的 `EvalBundle`。新 ZMAI 成对运行的手动采集步骤见[验收说明](docs/P03C_ZMAI_PAIR_ACCEPTANCE.md)。
 
-## 用法
-
-### 校验一条评测数据
-
-```bash
-uv run zmeval validate fixtures/zmai/synthetic_coding_agent_pass.json
-```
-
-合法数据：
-
-```text
-VALID  source=zmai  cases=1  attempts=1  run_status=SUCCEEDED
-  content_sha256=3f2a...
-```
-
-非法数据会指出**具体字段路径**，并以退出码 **1** 结束：
-
-```text
-INVALID  2 error(s):
-  cases[0].attempts[0].events: duplicate event sequence numbers: [2]
-  cases[0].attempts[0].input_tokens: Input should be a valid integer
-```
-
-### 导出 JSON Schema
-
-```bash
-uv run zmeval schema --out docs/schema/v1.json
-```
-
----
-
-## 数据契约概览
-
-`schema_version = 1`，四个核心模型（`src/zmevalhub/schemas/v1.py`）：
-
-```text
-SourceRunV1
-├── schema_version / source / source_run_id / importer_version
-├── subject   { name, git_sha?, model_id?, config_sha256? }
-├── dataset   { name, snapshot_sha256? }
-├── run_status            ← 平台执行状态
-└── cases: CaseV1[]
-        ├── case_id / kind (coding_agent | rag_agent)
-        ├── input / expected / tags
-        └── attempts: AttemptV1[]
-                ├── attempt_index / subject_outcome  ← 被测方声称
-                ├── trace_complete                   ← 决定能否判 FAIL
-                ├── measurement_status               ← 缺失值不许当 0
-                └── events: EventV1[]
-                        └── sequence（单调、去重）/ event_type / status / exit_code
-```
-
-契约里几条**用代码强制**的规则：
-
-- `extra="forbid"` — 拼错的字段名直接报错，不被静默吞掉。
-- 事件 `sequence` 必须唯一且升序 — 顺序是定位证据的基础。
-- `measurement_status="measured"` 必须同时有 token 数 — 防止"没测到"被当成"测到 0"。
-- 未测到的数值一律 `null`，**绝不允许写 0**。
-- `trace_complete=False` 时，需要完整事件窗口的规则只能返回 `UNKNOWN`。
-
----
-
-## 运行测试
-
-```bash
-uv run pytest -q                    # 全部定向测试（78 个，全部离线）
-uv run pytest tests/test_schema.py -q
-uv run pytest tests/test_phoenix_mapping.py -q
-uv run ruff check src tests scripts
-```
-
-### 验证 Phoenix 集成（需要本地服务）
+可选 Phoenix 集成需要本地运行的 Phoenix 服务：
 
 ```bash
 uv sync --extra dev --extra phoenix
-PHOENIX_WORKING_DIR=/tmp/phx_data PHOENIX_PORT=6006 \
-  uv run python -m phoenix.server.main serve
-
-# 另开终端
-export PHOENIX_COLLECTOR_ENDPOINT=http://127.0.0.1:6006
-uv run python scripts/probe_phoenix.py
-uv run python scripts/probe_otel_trace.py
-uv run python scripts/probe_verdict.py
-uv run python scripts/probe_phoenix_import.py
 ```
 
-详细结论见 [`docs/OPEN_SOURCE_REUSE_DECISION.md`](docs/OPEN_SOURCE_REUSE_DECISION.md)。
+只读 API 可单独安装并启动：
 
----
-
-## 当前进度与**未实现**功能
-
-### ✅ 已实现（P0.0）
-
-- 工程骨架：`pyproject.toml`（uv 管理）、README、`.gitignore`、`.env.example`
-- Pydantic v2 数据契约：`SourceRunV1` / `CaseV1` / `AttemptV1` / `EventV1`
-- 三种状态枚举严格分离：`RunStatus` / `SubjectOutcome` / `Verdict`
-- Coding Agent 与 RAG Agent 两种 case 类型
-- JSON Schema 生成（与 Pydantic 模型有测试保证一致）
-- `zmeval validate` CLI，错误定位到字段路径，非法数据退出码非零
-- fixture：真实脱敏样本 + 明确标注的 synthetic 样本 + 反例
-
-### ✅ 已实现（P0.1a — 开源复用验证）
-
-- Phoenix 21.0.0 集成验证：数据集 / 不可变版本 / 实验 / 运行记录
-- OpenInference Trace 往返：自定义属性无损
-- Verdict 四态（PASS/FAIL/UNKNOWN/ERROR）写入验证
-- 真实 ZMAI + ZMWiki fixture 端到端导入（9/9 PASS）
-- 映射适配器 `importers/phoenix_mapping.py`（17 条离线测试）
-- 结论：**复用 Phoenix 存储与追踪，自研规则/幂等/版本化/对比/Gate**
-
-### ⬜ 未实现（明确不声称支持）
-
-- **本地元数据库**：无 SQLite / SQLAlchemy / Alembic（P0.1b 只建 3 张表）
-- **异步任务**：无 Redis、无 RQ Worker
-- **评测引擎**：**没有任何规则评分**（`ZM-R001`~`ZM-R006` 均未实现）
-- **API**：无 FastAPI、无 REST 接口
-- **前端**：无 Vue、无任何页面
-- **对比与 Gate**：无成对比较、无质量门禁、无退出码语义实现
-- **上游自动导入**：无 `zmai-jsonl` / `zmwiki-jsonl` 适配器，fixture 仍为**手工**整理
-- **幂等导入**：未实现（Phoenix 无原生支持，必须自研）
-- **指标版本化**：未实现（Phoenix 重复评测会覆盖）
-- **Ragas / Promptfoo**：完全未接入
-- **Trace 自动采集**：能力已验证，但未接入导入流程
-- **LLM Judge**：未实现，且 P0 要求模型调用次数为 0
-
-> 项目名称、命令和字段描述的是**设计目标**，不代表已经具备该能力。
-
----
-
-## 目录结构
-
-```text
-中台/
-├── docs/
-│   ├── 00_ENGINEERING_BLUEPRINT.md   # 工程总纲（验收依据）
-│   └── DEVELOPMENT_STATUS.md         # 进度与阻塞
-├── fixtures/                          # 脱敏样本，全部标注来源
-├── src/zmevalhub/
-│   ├── schemas/v1.py                  # ★ 数据契约
-│   ├── validation.py                  # 校验入口
-│   └── cli/main.py                    # zmeval CLI
-└── tests/
+```bash
+uv sync --extra web
+uv run --extra web uvicorn zmevalhub.api.app:app --host 127.0.0.1 --port 8000
 ```
 
----
+启动后访问 `http://127.0.0.1:8000/docs`。默认只读取仓库 fixture 和被 `.gitignore` 排除的本地 `.zmevalhub/acceptance` 产物。HTTP 端点接收不透明运行 ID，不接收任意文件路径。
 
-## 许可
+## 数据与验证边界
 
-MIT。使用任何第三方代码/dependency 前需复核许可证，见 `docs/THIRD_PARTY.md`（待建）。
+- `fixtures/synthetic/` 是**合成数据**；`real_masked_*` 是**真实来源的脱敏节选**，并非未经修改的上游原始日志。
+- `UNKNOWN` 表示证据不足；`ERROR` 表示证据矛盾或评测错误；Gate 的 `BLOCKED` 表示无法可信地放行。它们都不能算作 PASS 或零分。
+- 当前没有前端、异步任务、在线批量评测器或已验证的真实 A/B 性能提升。Ragas 与 Promptfoo 尚未集成；现阶段的 RAG 指标是确定性检查，不是语义评分。
+- Phoenix 的数据集、实验、Trace 与 Evaluation 能力由 Phoenix 提供；本项目只提供适配、规则、比较、Gate 和只读查询，不把第三方能力声明为原创。
+
+## 许可证与第三方组件
+
+本仓库**自身代码**按 [MIT License](LICENSE) 发布。依赖按各自许可证分发；尤其 `arize-phoenix` 主包为 Elastic License 2.0，不能由本仓库的 MIT 许可覆盖。具体版本与边界见[第三方组件说明](docs/THIRD_PARTY.md)。本仓库不包含 Phoenix、Ragas 或其他依赖的源代码。
